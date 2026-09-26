@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ComiRapi V1</title>
+<style>
+:root{
+  --bg:#faf7f2; --card:#ffffff; --text:#2b2118; --muted:#7a6f63;
+  --brand:#e0562b; --brand-dark:#b8431f; --line:#e8ddd0; --ok:#2f8f4e; --bad:#c23b3b;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#1c1712; --card:#2a221a; --text:#f2e9dd; --muted:#b3a692; --line:#3c3128; }
+}
+:root[data-theme="dark"]{ --bg:#1c1712; --card:#2a221a; --text:#f2e9dd; --muted:#b3a692; --line:#3c3128; }
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
+header{padding:18px 16px;background:var(--brand);color:#fff;position:sticky;top:0;padding-top:calc(18px + env(safe-area-inset-top,0px));z-index:5}
+header h1{margin:0;font-size:1.25rem}
+header p{margin:2px 0 0;font-size:.8rem;opacity:.9}
+nav{display:flex;gap:8px;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:64px;z-index:4;overflow-x:auto}
+nav button{border:1px solid var(--line);background:transparent;color:var(--text);padding:8px 14px;border-radius:20px;cursor:pointer;font-size:.85rem;white-space:nowrap}
+nav button.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+main{max-width:760px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+label{display:block;font-size:.8rem;color:var(--muted);margin:10px 0 4px}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font-size:.95rem}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row > div{flex:1;min-width:140px}
+button.primary{margin-top:14px;background:var(--brand);color:#fff;border:none;padding:10px 16px;border-radius:8px;font-size:.9rem;cursor:pointer}
+button.primary:hover{background:var(--brand-dark)}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600}
+.wrap-table{overflow-x:auto}
+.pill{padding:2px 8px;border-radius:12px;font-size:.72rem}
+.pill.ok{background:rgba(47,143,78,.15);color:var(--ok)}
+.pill.bad{background:rgba(194,59,59,.15);color:var(--bad)}
+.icon-btn{border:none;background:none;cursor:pointer;color:var(--muted);font-size:.85rem;margin-right:6px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.kpi .v{font-size:1.5rem;font-weight:700}
+.kpi .l{font-size:.75rem;color:var(--muted)}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.bar-label{width:110px;font-size:.8rem;color:var(--muted)}
+.bar-track{flex:1;background:var(--line);border-radius:6px;height:16px;overflow:hidden}
+.bar-fill{height:100%;background:var(--brand)}
+.bar-val{width:60px;text-align:right;font-size:.8rem}
+.empty{color:var(--muted);font-size:.85rem;padding:8px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>ComiRapi V1</h1>
+  <p>Arquitectura Dual — CRUD de Pedidos (OLTP) + Dashboard (DW)</p>
+</header>
+<nav>
+  <button id="tabPedidosBtn" class="active" onclick="showTab('pedidos')">Pedidos</button>
+  <button id="tabDashBtn" onclick="showTab('dashboard')">Dashboard</button>
+</nav>
+<main>
+
+<section id="pedidos">
+  <div class="card">
+    <strong>Nuevo pedido</strong>
+    <div class="row">
+      <div>
+        <label>Cliente</label>
+        <input id="cliente" type="text" placeholder="Nombre del cliente">
+      </div>
+      <div>
+        <label>Producto</label>
+        <select id="producto">
+          <option value="Hamburguesa Clásica|25">Hamburguesa Clásica - Bs 25</option>
+          <option value="Hamburguesa Doble|35">Hamburguesa Doble - Bs 35</option>
+          <option value="Hamburguesa BBQ|30">Hamburguesa BBQ - Bs 30</option>
+          <option value="Papas Fritas|12">Papas Fritas - Bs 12</option>
+          <option value="Gaseosa|8">Gaseosa - Bs 8</option>
+        </select>
+      </div>
+      <div>
+        <label>Cantidad</label>
+        <input id="cantidad" type="number">
+      </div>
+    </div>
+    <button class="primary" onclick="agregarPedido()">Guardar pedido</button>
+  </div>
+
+  <div class="card">
+    <strong>Pedidos registrados</strong>
+    <div class="wrap-table">
+      <table>
+        <thead><tr><th>Cliente</th><th>Producto</th><th>Cant.</th><th>Total</th><th></th></tr></thead>
+        <tbody id="tablaPedidos"></tbody>
+      </table>
+    </div>
+    <div id="sinPedidos" class="empty" style="display:none">Todavía no hay pedidos.</div>
+  </div>
+</section>
+
+<section id="dashboard" hidden>
+  <div class="kpis">
+    <div class="kpi"><div class="v" id="kpiTotal">0</div><div class="l">Pedidos totales</div></div>
+    <div class="kpi"><div class="v" id="kpiIngresos">Bs 0</div><div class="l">Ingresos totales</div></div>
+    <div class="kpi"><div class="v" id="kpiPromedio">Bs 0</div><div class="l">Ticket promedio</div></div>
+  </div>
+  <div class="card">
+    <strong>Ventas por producto</strong>
+    <div id="barras" style="margin-top:12px"></div>
+  </div>
+</section>
+
+</main>
+
+<script>
+let pedidos = [];
+try{
+  const guardado = localStorage.getItem('comirapi_pedidos');
+  if(guardado) pedidos = JSON.parse(guardado);
+}catch(e){ pedidos = []; }
+
+function guardar(){
+  try{ localStorage.setItem('comirapi_pedidos', JSON.stringify(pedidos)); }catch(e){}
+}
+
+function showTab(tab){
+  document.getElementById('pedidos').hidden = tab !== 'pedidos';
+  document.getElementById('dashboard').hidden = tab !== 'dashboard';
+  document.getElementById('tabPedidosBtn').classList.toggle('active', tab==='pedidos');
+  document.getElementById('tabDashBtn').classList.toggle('active', tab==='dashboard');
+  if(tab==='dashboard') renderDashboard();
+}
+
+function agregarPedido(){
+  const cliente = document.getElementById('cliente').value.trim();
+  const prodRaw = document.getElementById('producto').value;
+  const [nombreProd, precio] = prodRaw.split('|');
+  const cantidad = document.getElementById('cantidad').value;
+
+  if(!cliente){ alert('Ingresá el nombre del cliente.'); return; }
+
+  const cantNum = parseInt(cantidad, 10);
+  const total = cantNum * parseFloat(precio);
+
+  pedidos.push({ cliente, producto: nombreProd, cantidad: cantNum, total });
+  guardar();
+  document.getElementById('cliente').value='';
+  document.getElementById('cantidad').value='';
+  renderPedidos();
+}
+
+function eliminarPedido(i){
+  pedidos.splice(i,1);
+  guardar();
+  renderPedidos();
+}
+
+function renderPedidos(){
+  const tbody = document.getElementById('tablaPedidos');
+  tbody.innerHTML = '';
+  document.getElementById('sinPedidos').style.display = pedidos.length ? 'none':'block';
+  pedidos.forEach((p,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${p.cliente}</td><td>${p.producto}</td><td>${p.cantidad}</td><td>Bs ${p.total}</td>
+      <td><button class="icon-btn" onclick="eliminarPedido(${i})">Eliminar</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderDashboard(){
+  const totalPedidos = pedidos.length;
+  const ingresos = pedidos.reduce((s,p)=>s+p.total,0);
+  const promedio = ingresos / totalPedidos;
+
+  document.getElementById('kpiTotal').textContent = totalPedidos;
+  document.getElementById('kpiIngresos').textContent = 'Bs ' + ingresos;
+  document.getElementById('kpiPromedio').textContent = 'Bs ' + Math.round(promedio*100)/100;
+
+  const porProducto = {};
+  pedidos.forEach(p=>{ porProducto[p.producto] = (porProducto[p.producto]||0) + p.total; });
+  const max = Math.max(1, ...Object.values(porProducto));
+  const cont = document.getElementById('barras');
+  cont.innerHTML = '';
+  Object.entries(porProducto).forEach(([nombre, val])=>{
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    row.innerHTML = `<div class="bar-label">${nombre}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(val/max*100)}%"></div></div>
+      <div class="bar-val">Bs ${val}</div>`;
+    cont.appendChild(row);
+  });
+}
+
+renderPedidos();
+</script>
+</body>
+</html>
